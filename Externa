@@ -1,0 +1,337 @@
+#include "p16F887.inc"   ; TODO INSERT CONFIG CODE HERE USING CONFIG BITS GENERATOR
+ 	__CONFIG	_CONFIG1,	_INTRC_OSC_NOCLKOUT & _WDT_OFF & _PWRTE_OFF & _MCLRE_ON & _CP_OFF & _CPD_OFF & _BOR_OFF & _IESO_ON & _FCMEN_ON & _LVP_OFF 
+ 	__CONFIG	_CONFIG2,	_BOR40V & _WRT_OFF
+
+RES_VECT CODE 0x0000            ; processor reset vector
+    GOTO ORGA
+    
+INT_VECT CODE 0x0004
+    GOTO INTERRUPCION
+
+MAIN_PROG CODE                      ; let linker place main program
+
+ORGA
+    GOTO    START                   ; go to beginning of program
+
+    BCF PORTC,0		;reset
+    MOVLW 0x01
+    MOVWF PORTD
+    
+    BSF PORTC,1		;exec
+    CALL time
+    BCF PORTC,1
+    CALL time
+    
+    GOTO    START 
+ 
+INTERRUPCION
+    BCF INTCON, GIE ;Disable all interrupts inside interrupt service routine
+    
+    INCF seg2
+    MOVFW seg2
+    XORLW b'00111010'
+    BTFSC STATUS,Z
+    CALL ceroseg2
+    MOVFW seg1
+    XORLW b'00110110'
+    BTFSC STATUS,Z
+    CALL ceroseg1
+    MOVFW min2
+    XORLW b'00111010'
+    BTFSC STATUS,Z
+    CALL cerosmin2
+    MOVFW min1
+    XORLW b'00110110'
+    BTFSC STATUS,Z
+    CALL cerosmin1
+    MOVFW hr2
+    XORLW b'00111010'
+    BTFSC STATUS,Z
+    CALL ceroshr2
+    MOVFW hr1
+    XORLW b'00110010'
+    BTFSC STATUS,Z
+    CALL ceroshr1
+    
+    
+    BCF INTCON,INTF ;Clear external interrupt flag bit
+    BSF INTCON, GIE ;Enable all interrupts on exit
+    RETFIE
+
+START
+
+i equ 0x30
+j equ 0x31
+k equ 0x32
+
+seg2 equ 0x33
+seg1 equ 0x34
+min2 equ 0x35
+min1 equ 0x36
+hr2 equ 0x37
+hr1 equ 0x38
+ 
+START
+  
+    
+    ;-------------------------------------
+    
+    MOVLW 0x07 ;Apagar comparadores
+    MOVWF CCP1CON
+    MOVLW b'10010000'
+    MOVWF INTCON
+    BANKSEL PORTB ;
+    CLRF PORTB ;Init PORTA
+    BANKSEL ANSEL ;
+    CLRF ANSEL ;digital I/O
+    CLRF ANSELH
+    BANKSEL TRISB ;
+    MOVLW d'255'
+    MOVWF TRISB
+    CLRF TRISA
+    CLRF TRISC
+    CLRF TRISD
+    CLRF TRISE
+    BCF STATUS,RP1
+    BCF STATUS,RP0
+    BCF PORTC,1
+    BCF PORTC,0
+    
+      ;Inicializacion del reloj 
+    
+    MOVLW b'00110101'
+    MOVWF seg2
+    MOVLW b'00110101'
+    MOVWF seg1
+    MOVLW b'00111001'
+    MOVWF min2
+    MOVLW b'00110101'
+    MOVWF min1
+    MOVLW b'00110011'
+    MOVWF hr2
+    MOVLW b'00110010'
+    MOVWF hr1
+    
+    
+INITLCD
+    
+    BCF PORTC,0		;reset
+    MOVLW 0x01
+    MOVWF PORTD
+    
+    BSF PORTC,1		;exec
+    CALL time
+    BCF PORTC,1
+    CALL time
+    
+    MOVLW 0x0C		;first line
+    MOVWF PORTD
+    
+    BSF PORTC,1		;exec
+    CALL time
+    BCF PORTC,1
+    CALL time
+         
+    MOVLW 0x3C		;cursor mode
+    MOVWF PORTD
+    
+    BSF PORTC,1		;exec
+    CALL time
+    BCF PORTC,1
+    CALL time
+        
+INICIO	  
+   
+    BCF PORTC,0		;command mode
+    CALL time
+    
+    MOVLW 0xC0		;LCD position
+    MOVWF PORTD
+    CALL exec
+    
+    BSF PORTC,0		;data mode
+    CALL time
+    
+    MOVLW 'Q'		;message1
+    MOVWF PORTD
+    CALL exec
+    MOVLW 'u'
+    MOVWF PORTD
+    CALL exec
+    MOVLW 'e'
+    MOVWF PORTD
+    CALL exec
+    MOVLW ' '
+    MOVWF PORTD
+    CALL exec
+    MOVLW 't'
+    MOVWF PORTD
+    CALL exec
+    MOVLW 'a'
+    MOVWF PORTD
+    CALL exec  
+    MOVLW 'l'		
+    MOVWF PORTD
+    CALL exec
+    MOVLW ','		
+    MOVWF PORTD
+    CALL exec
+    MOVLW ' '		
+    MOVWF PORTD
+    CALL exec
+    MOVLW 's'		
+    MOVWF PORTD
+    CALL exec
+    MOVLW 'o'		
+    MOVWF PORTD
+    CALL exec
+    MOVLW 'n'		
+    MOVWF PORTD
+    CALL exec
+    MOVLW ' '		
+    MOVWF PORTD
+    CALL exec
+    MOVLW 'l'		
+    MOVWF PORTD
+    CALL exec
+    MOVLW 'a'		
+    MOVWF PORTD
+    CALL exec
+    MOVLW 's'		
+    MOVWF PORTD
+    CALL exec
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    
+    BCF PORTC,0		;command mode
+    CALL time
+    
+    MOVLW 0x91		;LCD position
+    MOVWF PORTD
+    CALL exec
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    BSF PORTC,0		;data mode
+    CALL time
+    
+    MOVLW '*'		;message1
+    MOVWF PORTD
+    CALL exec
+    
+    
+    MOVFW hr1	
+    MOVWF PORTD
+    CALL exec
+    MOVFW hr2
+    MOVWF PORTD
+    CALL exec
+    MOVLW ':'
+    MOVWF PORTD
+    CALL exec
+    MOVFW min1
+    MOVWF PORTD
+    CALL exec
+    MOVFW min2
+    MOVWF PORTD
+    CALL exec
+    MOVLW ':'
+    MOVWF PORTD
+    CALL exec
+    MOVFW seg1
+    MOVWF PORTD
+    CALL exec
+    MOVFW seg2
+    MOVWF PORTD
+    CALL exec
+    MOVLW ' '
+    MOVWF PORTD
+    CALL exec
+    MOVLW 'h'
+    MOVWF PORTD
+    CALL exec
+    MOVLW 'r'
+    MOVWF PORTD
+    CALL exec
+    MOVLW 's'
+    MOVWF PORTD
+    CALL exec
+    
+    
+    MOVLW '*'		
+    MOVWF PORTD
+    CALL exec
+    
+    BCF PORTC,0		;command mode
+    CALL time
+    
+    MOVLW 0x81		;LCD position
+    MOVWF PORTD
+    CALL exec
+        
+    GOTO INICIO
+
+exec
+    BSF PORTC,1		;exec
+    CALL time
+    BCF PORTC,1
+    CALL time
+    RETURN
+    
+time
+    CLRF i
+    MOVLW d'10'
+    MOVWF j
+ciclo    
+    MOVLW d'80'
+    MOVWF i
+    DECFSZ i
+    GOTO $-1
+    DECFSZ j
+    GOTO ciclo
+    RETURN
+    
+ceroseg2
+    MOVLW b'00110000'
+    MOVWF seg2
+    INCF seg1
+    return
+    
+ceroseg1
+    MOVLW b'00110000'
+    MOVWF seg1
+    INCF min2
+    return
+    
+cerosmin2
+    MOVLW b'00110000'
+    MOVWF min2
+    INCF min1
+    return
+    
+cerosmin1
+    MOVLW b'00110000'
+    MOVWF min1
+    INCF hr2
+    return
+    
+ceroshr2
+    MOVLW b'00110000'
+    MOVWF hr2
+    INCF hr1
+    return
+    
+ceroshr1
+    MOVFW hr2
+    XORLW b'00110100'
+    BTFSC STATUS,Z
+    CALL cerosHORA_24hrs
+    return
+    
+cerosHORA_24hrs
+    MOVLW b'00110000'
+    MOVWF hr1
+    MOVLW b'00110000'
+    MOVWF hr2
+    return
+			
+    END
